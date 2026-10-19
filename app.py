@@ -3,17 +3,17 @@ import streamlit as st
 from PyPDF2 import PdfReader
 
 # ============================================================
-# CONFIGURACIÓN GENERAL (SIN SIDEBAR)
+# CONFIGURACIÓN GENERAL (SIN SIDEBAR Y SIN BORDER=TRUE)
 # ============================================================
 st.set_page_config(
-    page_title="Consulta de Documentos // Krov Industries",
+    page_title="Consulta de Documentos PDF // Krov Industries",
     page_icon="💬",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 # ============================================================
-# ESTILOS VISUALES: ESMERALDA LÍQUIDO Y RESPLANDOR TÁCTIL
+# ESTILOS VISUALES: OCÉANO LÍQUIDO Y TARJETAS SÓLIDAS
 # ============================================================
 st.markdown("""
 <style>
@@ -29,12 +29,12 @@ html, body, [data-testid="stAppViewContainer"], .stApp {
 [data-testid="stHeader"] { background: transparent !important; }
 [data-testid="stSidebar"], section[data-testid="stSidebar"] { display: none !important; }
 
-/* Fondo líquido acelerado por GPU */
+/* Fondo líquido animado en GPU */
 .stApp {
     background:
-        radial-gradient(circle at 15% 20%, rgba(0, 255, 136, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 15% 20%, rgba(0, 255, 136, 0.16) 0%, transparent 40%),
         radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.16) 0%, transparent 45%),
-        linear-gradient(135deg, #04090e 0%, #081d28 50%, #04090e 100%) !important;
+        linear-gradient(135deg, #04090e 0%, #071a24 50%, #04090e 100%) !important;
     background-size: 200% 200% !important;
     animation: tealLava 14s ease infinite alternate !important;
 }
@@ -52,7 +52,6 @@ html, body, [data-testid="stAppViewContainer"], .stApp {
     letter-spacing: 0.18em;
     color: #00ff88;
     text-transform: uppercase;
-    margin-bottom: 2px;
 }
 
 .main-title {
@@ -71,15 +70,15 @@ html, body, [data-testid="stAppViewContainer"], .stApp {
     margin-bottom: 1.6rem;
 }
 
-/* Contenedores nativos con cristalización */
-div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: rgba(8, 20, 30, 0.85) !important;
-    border: 1px solid rgba(0, 255, 136, 0.25) !important;
-    border-radius: 8px !important;
-    padding: 1.2rem 1.4rem !important;
-    backdrop-filter: blur(14px) !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
-    margin-bottom: 0.8rem !important;
+/* Tarjeta sólida compatible con versiones previas de Streamlit */
+.solid-rag-card {
+    background: rgba(8, 20, 30, 0.88);
+    border: 1px solid rgba(0, 255, 136, 0.28);
+    border-radius: 8px;
+    padding: 22px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    margin-bottom: 1rem;
 }
 
 div.stButton > button {
@@ -100,7 +99,7 @@ div.stButton > button:hover {
     box-shadow: 0 0 35px rgba(0, 255, 136, 0.7) !important;
 }
 
-.answer-card {
+.answer-box {
     background: rgba(6, 16, 24, 0.9);
     border-left: 4px solid #00ff88;
     padding: 18px;
@@ -118,64 +117,64 @@ st.markdown('<div class="sub-lead">Indexación y respuestas contextualizadas a p
 col_doc, col_qa = st.columns([1, 1.3], gap="large")
 
 with col_doc:
-    with st.container(border=True):
-        st.markdown("#### 1. Archivo y Credenciales")
-        api_key = st.text_input("Clave de API de OpenAI:", type="password", value=os.environ.get("OPENAI_API_KEY", ""), placeholder="sk-...")
-        if api_key:
-            os.environ["OPENAI_API_KEY"] = api_key
+    st.markdown('<div class="solid-rag-card">', unsafe_allow_html=True)
+    st.markdown("#### 1. Archivo y Credenciales")
+    api_key = st.text_input("Clave de API de OpenAI:", type="password", value=os.environ.get("OPENAI_API_KEY", ""), placeholder="sk-...")
+    if api_key:
+        os.environ["OPENAI_API_KEY"] = api_key
 
-        pdf = st.file_uploader("Selecciona el archivo PDF:", type="pdf")
-        chunks = None
-        if pdf:
-            try:
-                reader = PdfReader(pdf)
-                texto = "".join([p.extract_text() or "" for p in reader.pages])
-                st.info(f"Texto extraído: {len(texto):,} caracteres.")
+    pdf = st.file_uploader("Selecciona el archivo PDF:", type="pdf")
+    chunks = None
+    if pdf:
+        try:
+            reader = PdfReader(pdf)
+            texto = "".join([p.extract_text() or "" for p in reader.pages])
+            st.info(f"Texto extraído: {len(texto):,} caracteres.")
 
-                # División del texto en fragmentos
-                from langchain.text_splitter import CharacterTextSplitter
-                splitter = CharacterTextSplitter(separator="\n", chunk_size=500, chunk_overlap=20)
-                chunks = splitter.split_text(texto)
-                st.success(f"Indexado en {len(chunks)} fragmentos.")
-            except Exception as e:
-                st.error(f"Error al procesar el archivo: {e}")
+            from langchain.text_splitter import CharacterTextSplitter
+            splitter = CharacterTextSplitter(separator="\n", chunk_size=500, chunk_overlap=20)
+            chunks = splitter.split_text(texto)
+            st.success(f"Indexado en {len(chunks)} fragmentos.")
+        except Exception as e:
+            st.error(f"Error al procesar el archivo: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col_qa:
-    with st.container(border=True):
-        st.markdown("#### 2. Pregunta al documento")
-        pregunta = st.text_area("Pregunta:", placeholder="¿Cuáles son las conclusiones principales del texto?")
-        consultar_btn = st.button("Consultar documento", use_container_width=True)
+    st.markdown('<div class="solid-rag-card">', unsafe_allow_html=True)
+    st.markdown("#### 2. Pregunta al documento")
+    pregunta = st.text_area("Pregunta:", placeholder="¿Cuáles son los puntos clave tratados en el archivo?")
+    consultar_btn = st.button("Consultar documento", use_container_width=True)
 
-        if consultar_btn:
-            key_val = os.environ.get("OPENAI_API_KEY", "").strip()
-            if not key_val:
-                st.warning("Introduce tu clave de API de OpenAI en el panel izquierdo.")
-            elif not pdf or not chunks:
-                st.warning("Carga primero un archivo PDF válido.")
-            elif not pregunta.strip():
-                st.warning("Escribe una pregunta para consultar.")
-            else:
-                with st.spinner("Buscando en los fragmentos del documento..."):
+    if consultar_btn:
+        key_val = os.environ.get("OPENAI_API_KEY", "").strip()
+        if not key_val:
+            st.warning("Introduce tu clave de API de OpenAI en el panel izquierdo.")
+        elif not pdf or not chunks:
+            st.warning("Carga primero un archivo PDF válido.")
+        elif not pregunta.strip():
+            st.warning("Escribe una pregunta para consultar.")
+        else:
+            with st.spinner("Buscando en los fragmentos del documento..."):
+                try:
                     try:
-                        # Compatibilidad dual de imports LangChain
-                        try:
-                            from langchain_community.embeddings import OpenAIEmbeddings
-                            from langchain_community.vectorstores import FAISS
-                            from langchain_community.chat_models import ChatOpenAI
-                        except ImportError:
-                            from langchain.embeddings import OpenAIEmbeddings
-                            from langchain.vectorstores import FAISS
-                            from langchain.llms import OpenAI as ChatOpenAI
+                        from langchain_community.embeddings import OpenAIEmbeddings
+                        from langchain_community.vectorstores import FAISS
+                        from langchain_community.chat_models import ChatOpenAI
+                    except ImportError:
+                        from langchain.embeddings import OpenAIEmbeddings
+                        from langchain.vectorstores import FAISS
+                        from langchain.llms import OpenAI as ChatOpenAI
 
-                        from langchain.chains.question_answering import load_qa_chain
+                    from langchain.chains.question_answering import load_qa_chain
 
-                        embeddings = OpenAIEmbeddings(openai_api_key=key_val)
-                        db = FAISS.from_texts(chunks, embeddings)
-                        docs = db.similarity_search(pregunta)
-                        llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini", openai_api_key=key_val)
-                        chain = load_qa_chain(llm, chain_type="stuff")
-                        res = chain.run(input_documents=docs, question=pregunta)
+                    embeddings = OpenAIEmbeddings(openai_api_key=key_val)
+                    db = FAISS.from_texts(chunks, embeddings)
+                    docs = db.similarity_search(pregunta)
+                    llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini", openai_api_key=key_val)
+                    chain = load_qa_chain(llm, chain_type="stuff")
+                    res = chain.run(input_documents=docs, question=pregunta)
 
-                        st.markdown(f'<div class="answer-card"><b>Respuesta:</b><br>{res}</div>', unsafe_allow_html=True)
-                    except Exception as e:
-                        st.error(f"Error durante la inferencia: {e}")
+                    st.markdown(f'<div class="answer-box"><b>Respuesta:</b><br>{res}</div>', unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"Error durante la inferencia: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
