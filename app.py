@@ -21,9 +21,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Inicialización del estado de sesión
+# Inicialización de estado
 if "turns" not in st.session_state:
-    st.session_state.turns = []  # Almacena pares: {"user": ..., "assistant": ...}
+    st.session_state.turns = []  # Lista de dicts: {"user": ..., "assistant": ...}
 if "pdf_id" not in st.session_state:
     st.session_state.pdf_id = None
 if "pdf_chunks" not in st.session_state:
@@ -34,11 +34,11 @@ if "pdf_name" not in st.session_state:
     st.session_state.pdf_name = ""
 
 # ============================================================
-# ESTILOS: ENTRADA FIJA SUPERIOR Y ANIMACIÓN DESCENDENTE
+# ESTILOS: CABECERA FIJA Y DESPLAZAMIENTO FLUIDO EN BLOQUE
 # ============================================================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
 html, body, [data-testid="stAppViewContainer"], .stApp, section.main, .block-container {
     background: transparent !important;
@@ -97,24 +97,22 @@ body {
 }
 
 /* -----------------------------------------------------------
-   CABECERA FIJA SUPERIOR PARA EL CAMPO DE TEXTO
+   CAMPO DE ENTRADA FIJO EN LA PARTE SUPERIOR (STICKY)
 ----------------------------------------------------------- */
 .sticky-input-anchor {
     position: -webkit-sticky !important;
     position: sticky !important;
     top: 0 !important;
-    z-index: 99 !important;
-    background: rgba(4, 9, 14, 0.95) !important;
-    backdrop-filter: blur(14px) !important;
-    -webkit-backdrop-filter: blur(14px) !important;
+    z-index: 999 !important;
+    background: #04090e !important;
+    background-color: #04090e !important;
     padding-top: 6px !important;
     padding-bottom: 12px !important;
-    border-bottom: 1px solid rgba(0, 255, 136, 0.2) !important;
+    border-bottom: 1px solid rgba(0, 255, 136, 0.22) !important;
     margin-bottom: 16px !important;
-    box-shadow: 0 10px 30px rgba(4, 9, 14, 0.95) !important;
+    box-shadow: 0 12px 30px rgba(4, 9, 14, 0.98) !important;
 }
 
-/* Estilo del formulario de entrada */
 div[data-testid="stForm"] {
     border: 1px solid rgba(0, 255, 136, 0.3) !important;
     background: rgba(6, 18, 28, 0.92) !important;
@@ -128,7 +126,6 @@ div[data-testid="stForm"]:focus-within {
     box-shadow: 0 0 20px rgba(0, 255, 136, 0.25) !important;
 }
 
-/* Botón de envío */
 div.stButton > button[kind="primary"], div[data-testid="stFormSubmitButton"] > button {
     border-radius: 6px !important;
     font-family: 'JetBrains Mono', monospace !important;
@@ -163,18 +160,16 @@ div.stButton > button[kind="secondary"]:hover {
 }
 
 /* -----------------------------------------------------------
-   ANIMACIÓN: DESPLAZAMIENTO HACIA ABAJO DE LOS MENSAJES
+   ANIMACIÓN DE ENTRADA Y DESPLAZAMIENTO DEL BLOQUE ENTERO
 ----------------------------------------------------------- */
-@keyframes displaceDown {
+@keyframes slideDownBlock {
     0% {
         opacity: 0;
-        transform: translateY(-28px) scale(0.98);
-        filter: blur(4px);
+        transform: translateY(-24px) scale(0.98);
     }
     60% {
         opacity: 0.95;
         transform: translateY(2px) scale(1.002);
-        filter: blur(0px);
     }
     100% {
         opacity: 1;
@@ -182,40 +177,33 @@ div.stButton > button[kind="secondary"]:hover {
     }
 }
 
-.chat-turn-box {
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin-bottom: 16px;
-    line-height: 1.65;
-    font-size: 0.94rem;
-    transition: all 0.3s ease;
+/* El bloque contenedor completo de cada intercambio */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: rgba(6, 18, 28, 0.88) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-left: 4px solid rgba(14, 165, 233, 0.6) !important;
+    border-radius: 10px !important;
+    padding: 16px 20px !important;
+    margin-bottom: 14px !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55) !important;
+    animation: slideDownBlock 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: transform 0.35s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
-/* Tarjeta destacada: La última respuesta generada */
-.turn-latest {
-    animation: displaceDown 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    background: rgba(6, 22, 34, 0.94);
-    border: 1px solid rgba(0, 255, 136, 0.45);
-    border-left: 4px solid #00ff88;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75), 0 0 25px rgba(0, 255, 136, 0.18);
+/* Estilo distintivo para el primer bloque (el más nuevo en el tope) */
+div[data-testid="stVerticalBlockBorderWrapper"]:first-of-type {
+    border-left: 4px solid #00ff88 !important;
+    border-color: rgba(0, 255, 136, 0.4) !important;
+    background: rgba(6, 22, 34, 0.95) !important;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75), 0 0 25px rgba(0, 255, 136, 0.18) !important;
 }
 
-/* Tarjetas previas: Se desplazan hacia abajo suavemente */
-.turn-past {
-    animation: displaceDown 0.35s ease-out forwards;
-    background: rgba(6, 16, 24, 0.78);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-left: 4px solid rgba(14, 165, 233, 0.45);
-    opacity: 0.84;
+div[data-testid="stVerticalBlockBorderWrapper"]:not(:first-of-type):hover {
+    border-left-color: #0ea5e9 !important;
+    opacity: 1 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7) !important;
 }
 
-.turn-past:hover {
-    opacity: 1;
-    border-left-color: #0ea5e9;
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.5);
-}
-
-/* Metadatos y etiquetas */
 .turn-meta {
     display: flex;
     align-items: center;
@@ -464,11 +452,39 @@ with col_chat:
     st.markdown('</div>', unsafe_allow_html=True)
 
     # --------------------------------------------------------
-    # ÁREA DE MENSAJES (EL MÁS RECIENTE DIRECTO ABAJO DEL INPUT)
+    # ARQUITECTURA DE DESPLAZAMIENTO:
+    # 1. Ranura superior reservada para la nueva respuesta entrante
+    # 2. Contenedor inferior para los mensajes existentes (NUNCA desaparecen)
     # --------------------------------------------------------
-    nueva_respuesta = None
+    slot_nueva_respuesta = st.empty()
+    contenedor_historial = st.container()
 
-    # Si el usuario envió una consulta en este frame
+    # RENDERIZAR DE INMEDIATO EL HISTORIAL COMPLETO
+    # Esto asegura que el mensaje anterior permanezca visible y se desplace hacia abajo
+    with contenedor_historial:
+        if st.session_state.turns:
+            # Los turnos existentes se muestran en orden inverso (más reciente arriba)
+            for i, t in enumerate(reversed(st.session_state.turns)):
+                # Si no hay una nueva consulta escribiéndose en el slot superior, el primero tiene badge 'ÚLTIMA RESPUESTA'
+                badge_html = '<span class="badge-past">RESPUESTA PREVIA</span>' if (submitted and pregunta_usuario.strip()) else ('<span class="badge-latest">⚡ ÚLTIMA RESPUESTA</span>' if i == 0 else '<span class="badge-past">RESPUESTA PREVIA</span>')
+
+                with st.container(border=True):
+                    st.markdown(f"""
+                    <div class="turn-meta">
+                        {badge_html}
+                        <span class="query-chip"><b>Tú:</b> {html.escape(t['user'])}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown(t["assistant"])
+        elif not (submitted and pregunta_usuario.strip()):
+            with st.container(border=True):
+                st.markdown("""
+                <div style="text-align: center; color: #94a3b8; padding: 12px 0;">
+                    El chat está listo. Escribe tu primera pregunta en el campo superior fijo para leer la respuesta aquí.
+                </div>
+                """, unsafe_allow_html=True)
+
+    # SI HAY UNA NUEVA CONSULTA: ESCRIBIR EN EL SLOT SUPERIOR (EMPUJANDO EL HISTORIAL HACIA ABAJO)
     if submitted and pregunta_usuario.strip():
         api_actual = os.environ.get("OPENAI_API_KEY", "").strip()
         if not api_actual:
@@ -500,7 +516,7 @@ with col_chat:
                     f"CONTEXTO DEL DOCUMENTO:\n{contexto}"
                 )
 
-                # Construir historial para contexto conversacional
+                # Historial de contexto para el LLM
                 mensajes_api = [{"role": "system", "content": system_prompt}]
                 for t in st.session_state.turns[-3:]:
                     mensajes_api.append({"role": "user", "content": t["user"]})
@@ -514,19 +530,18 @@ with col_chat:
                     stream=True
                 )
 
-                # RENDER DE LA NUEVA RESPUESTA EN PRIMERA POSICIÓN (ANIMACIÓN ACTIVA)
-                with st.container():
-                    st.markdown(f"""
-                    <div class="chat-turn-box turn-latest">
+                # Renderizar la nueva tarjeta en la parte superior dentro de un único bloque sólido con borde
+                with slot_nueva_respuesta.container():
+                    with st.container(border=True):
+                        st.markdown(f"""
                         <div class="turn-meta">
                             <span class="badge-latest">⚡ ÚLTIMA RESPUESTA</span>
                             <span class="query-chip"><b>Tú:</b> {html.escape(pregunta_usuario)}</span>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    nueva_respuesta = st.write_stream(stream)
+                        """, unsafe_allow_html=True)
+                        nueva_respuesta = st.write_stream(stream)
 
-                # Guardar el nuevo turno al final de la lista cronológica
+                # Guardar el intercambio en el historial cronológico
                 st.session_state.turns.append({
                     "user": pregunta_usuario,
                     "assistant": nueva_respuesta
@@ -534,34 +549,3 @@ with col_chat:
 
             except Exception as e:
                 st.error(f"Error durante la inferencia: {e}")
-
-    # RENDER DE LAS RESPUESTAS ANTERIORES (DESPLAZADAS HACIA ABAJO)
-    turnos_a_mostrar = list(reversed(st.session_state.turns))
-
-    # Si acabamos de hacer streaming de una nueva respuesta, evitamos duplicarla en esta misma pasada
-    if nueva_respuesta is not None and len(turnos_a_mostrar) > 0:
-        turnos_a_mostrar = turnos_a_mostrar[1:]
-
-    for i, t in enumerate(turnos_a_mostrar):
-        # La tarjeta superior (si no estamos en medio de un nuevo streaming) recibe el estilo latest
-        clase_css = "turn-latest" if (i == 0 and nueva_respuesta is None) else "turn-past"
-        badge_html = '<span class="badge-latest">⚡ ÚLTIMA RESPUESTA</span>' if (i == 0 and nueva_respuesta is None) else '<span class="badge-past">RESPUESTA ANTERIOR</span>'
-
-        with st.container():
-            st.markdown(f"""
-            <div class="chat-turn-box {clase_css}">
-                <div class="turn-meta">
-                    {badge_html}
-                    <span class="query-chip"><b>Tú:</b> {html.escape(t['user'])}</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown(t["assistant"])
-
-    # Mensaje inicial si no hay consultas aún
-    if not st.session_state.turns and nueva_respuesta is None:
-        st.markdown("""
-        <div class="chat-turn-box turn-past" style="border-left-color: #0ea5e9; text-align: center; color: #94a3b8;">
-            El chat está listo. Escribe tu primera pregunta en el campo superior fijo para leer la respuesta aquí.
-        </div>
-        """, unsafe_allow_html=True)
